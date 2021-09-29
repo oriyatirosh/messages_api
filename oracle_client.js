@@ -6,6 +6,6 @@ module.exports = function(s){
     console.error('Whoops!');
     console.error(err);
     logger.error(err);
-    process.exit(1);
+    throw err;
   }
 }

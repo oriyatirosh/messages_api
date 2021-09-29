@@ -1,9 +1,9 @@
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
-const route = require('./router');
+const route = require('./test_router');
 const oracle_client = require('./oracle_client');
-const logger = require('./logger');
+//const logger = require('./logger');
 require('dotenv').config()
 
 const port = process.env.PORT;
@@ -13,6 +13,7 @@ console.log(host);
 // Use body parser
 app.use(bodyParser.json());
 //app.use(bodyParser.urlencoded({ extended: false }))
+oracle_client();
 
 app.use('/api',route);
 
@@ -22,21 +23,19 @@ app.get('/',(req,res)=>{
 
 app.all('*', (req, res) => {
 
-    res.status(404).end(JSON.stringify({
+    res.status(404).json({
        status: 'fail',
        message: "error 404! resource not found",
-   })); 
-   logger.error("error 404! resource not found");
+   }); 
+   //logger.error("error 404! resource not found");
 
 }) 
-
 
 var server = app.listen(port, () => {   // Run the server
     "use strict";
 
     console.log("Server started...");
-    logger.info(`Server started and running on http://${host}:${port}`);
-    oracle_client();
+    //logger.info(`Server started and running on http://${host}:${port}`);
 
   })
 
