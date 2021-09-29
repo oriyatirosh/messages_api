@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
-const route = require('./router');
+const route = require('./test_router');
 const oracle_client = require('./oracle_client');
 const logger = require('./logger');
 require('dotenv').config()
