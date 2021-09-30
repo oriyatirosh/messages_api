@@ -1,8 +1,8 @@
+
 const express = require('express');
 const route = express.Router();
 const bodyParser = require('body-parser');
 //const oracledb = require('oracledb');
-var knex = require("knex")(knexConfig);
 //const logger = require('./logger');
 require('dotenv').config();
 
@@ -15,8 +15,8 @@ var password = process.env.PASSWORD;
     "connectString": '100.100.100.19:1522/TIRGUL'
 } */
 
-const connAttrs = knex({
-    client: 'oracle',
+const knex = require('knex')({
+    client: 'oracledb',
     connection: {
         "user": user,
         "password": password,
@@ -24,13 +24,11 @@ const connAttrs = knex({
     }
 });
 
-//---------------------- get
+//knex.select("*").from("MESSAGES").orderBy(order_by, 'desc')
+
 async function selectAllMessages(req, res) {
 
     try {
-/*       connection = await oracledb.getConnection(connAttrs);
-      console.log('connected to database'); */
-
       // run query to get all messages
 
       var order_by ;
@@ -48,9 +46,10 @@ async function selectAllMessages(req, res) {
                 }
             }         
         }
-      // Return the result as Object
-      result = await connection.execute("SELECT * FROM MESSAGES ORDER BY " + order_by, {}, {outFormat: oracledb.OBJECT});  
-  
+
+      result = await knex.select("*").from("MESSAGES").orderBy(order_by, 'desc')
+      .then(console.log('GET /messages : Connection  success'));
+
     } catch (err) {
       //send error message
         res.status(500).json({
@@ -61,16 +60,7 @@ async function selectAllMessages(req, res) {
         //logger.error('Error getting the Message data');
 
     } finally {
-        if (connection) {
-            try {
-                // Always close connections
-                await connection.close();
-                console.log('GET /messages : Connection  success');
-            } catch (err) {
-                console.error(err.message);
-            }
-        }
-      if (result.rows.length == 0) {
+      if (!result) {
             //query return zero messages
             return res.send('query send no rows');
         } else {
@@ -78,19 +68,19 @@ async function selectAllMessages(req, res) {
             res.status(200).json({
                 status: 'ok', 
                 message: '',
-                payload: result.rows, 
+                payload: result, 
             });
-        }
-  
+        }  
     }
 }
-  
+
 // Http Method: GET
 // URI        : /messages
 // Read all the messages
 route.get('/messages', function (req, res) {
     selectAllMessages(req, res);
 })
+
 
 //---------------------- post
 async function createNewMessage(req, res) {
@@ -116,22 +106,23 @@ async function createNewMessage(req, res) {
     }
 
     try {
-        connection = await oracledb.getConnection(connAttrs);
-        console.log('connected to database');
-
-      // run query to get all messages
-
         var created_d = new Date();
         var updated_d = new Date();
         var m_key = Math.random().toString(36).substr(2, 4);
 
-      // Return the result as Object
-        result = await connection.execute("INSERT INTO MESSAGES (FROM_NAME, TO_NAME, MESSAGE, CREATED_AT, UPDATED_AT, KEY) VALUES " +
-        "(:FROM_NAME, :TO_NAME, :MESSAGE, :CREATED_AT," +
-        ":UPDATED_AT, :KEY) ",[req.body.FROM_NAME, req.body.TO_NAME,req.body.MESSAGE, created_d, updated_d,m_key], {
-            autoCommit: true,
-            outFormat: oracledb.OBJECT // Return the result as Object
-        });  
+        var insert_message = {
+           FROM_NAME: req.body.FROM_NAME,
+           TO_NAME: req.body.TO_NAME,
+           MESSAGE: req.body.MESSAGE,
+           CREATED_AT: created_d,
+           UPDATED_AT: updated_d,
+           KEY: m_key
+        };
+
+        result = await knex("MESSAGES").insert(insert_message)
+        .then(
+            console.log("POST /messages : connection success")
+        );  
   
     } catch (err) {
       //send error message
@@ -143,19 +134,7 @@ async function createNewMessage(req, res) {
         //logger.error(err.message.indexOf("ORA-00001") > -1 ? "Message already exists" : "Input Error");
 
     } finally {
-        if (connection) {
-            try {
-                // Always close connections
-                await connection.close();
-                console.log("POST /messages : Connection released");
-                res.status(200).set('Location', '/messages/' + req.body.KEY).end();
-                //logger.info('Successfully created the resource');
-            } catch (err) {
-                console.error(err.message);
-                //logger.error(err.message);
-            }
-        }
-  
+        res.status(200).set('Location', '/messages/' + req.body.KEY).end();
     }
 }
   
@@ -166,15 +145,18 @@ route.post('/messages', function (req, res) {
     createNewMessage(req, res);
 })
 
+
 //---------------------- get by message_key
 async function selectByMessage_key(req, res) {
 
     try {
-      connection = await oracledb.getConnection(connAttrs);
-      console.log('connected to database');
 
-      // Return the result as Object
-      result = await connection.execute("SELECT * FROM MESSAGES WHERE KEY = :MESSAGE_KEY", [req.params.MESSAGE_KEY], {}, {outFormat: oracledb.OBJECT});  
+      result = await knex("MESSAGES").where('key', req.params.MESSAGE_KEY).select("*")
+      .then(
+        console.log("GET /messages/" + req.params.MESSAGE_KEY + " : Connection  success")
+      );
+  
+      //result = await connection.execute("SELECT * FROM MESSAGES WHERE KEY = :MESSAGE_KEY", [req.params.MESSAGE_KEY], {}, {outFormat: oracledb.OBJECT});  
   
     } catch (err) {
       //send error message
@@ -186,18 +168,7 @@ async function selectByMessage_key(req, res) {
         //logger.error('Error getting the Message data');
 
     } finally {
-        if (connection) {
-            try {
-                // Always close connections
-                await connection.close();
-                console.log("GET /messages/" + req.params.MESSAGE_KEY + " : Connection released");
-                //logger.info("GET /messages/" + req.params.MESSAGE_KEY + " : Connection released");
-            } catch (err) {
-                console.error(err.message);
-                //logger.error(err.message);
-            }
-        }
-      if (result.rows.length == 0) {
+      if (!result) {
             //query return zero messages
             return res.send('query send no rows');
         } else {
@@ -205,10 +176,9 @@ async function selectByMessage_key(req, res) {
             res.status(200).json({
                 status: 'ok', 
                 message: '',
-                payload: result.rows, 
+                payload: result, 
             });
         }
-  
     }
 }
   
@@ -224,11 +194,15 @@ route.get('/messages/:MESSAGE_KEY', function (req, res) {
 async function DeleteByMessage_key(req, res) {
 
     try {
-      connection = await oracledb.getConnection(connAttrs);
-      console.log('connected to database');
+/*       connection = await oracledb.getConnection(connAttrs);
+      console.log('connected to database'); */
 
-      // Return the result as Object
-      result = await connection.execute("DELETE FROM MESSAGES WHERE KEY = :MESSAGE_KEY", [req.params.MESSAGE_KEY], {}, {autoCommit: true,outFormat: oracledb.OBJECT});  
+      result = await knex("MESSAGES").where("KEY",req.params.MESSAGE_KEY).del()
+      .then(
+        console.log("DELETE /messages/" + req.params.MESSAGE_KEY + " : Connection success")
+      );  
+
+      //result = await connection.execute("DELETE FROM MESSAGES WHERE KEY = :MESSAGE_KEY", [req.params.MESSAGE_KEY], {}, {autoCommit: true,outFormat: oracledb.OBJECT});  
   
     } catch (err) {
       //send error message
@@ -240,18 +214,8 @@ async function DeleteByMessage_key(req, res) {
         //logger.error("Input Error");
 
     } finally {
-        if (connection) {
-            try {
-                // Always close connections
-                await connection.close();
-                console.log("DELETE /messages/" + req.params.MESSAGE_KEY + " : Connection released");
-                //logger.info("DELETE /messages/" + req.params.MESSAGE_KEY + " : Connection released");
-            } catch (err) {
-                console.error(err.message);
-                //logger.error(err.message);
-            }
-        }
-      if (result.rowsAffected === 0) {
+
+      if (result === 0) {
             //query return zero messages
             res.status(400).json({
                 status: 'fail',
@@ -272,5 +236,6 @@ async function DeleteByMessage_key(req, res) {
 route.delete('/messages/:MESSAGE_KEY', function (req, res) {
     DeleteByMessage_key(req, res);
 })
+
 
 module.exports = route;

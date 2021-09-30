@@ -1,7 +1,6 @@
 {
-  "name": "targil_2",
+  "name": "--s",
   "version": "1.0.0",
-  "description": "",
   "scripts": {
     "start": "node app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -11,8 +10,25 @@
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.19.0",
+    "config": "^3.3.6",
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
-    "oracledb": "^5.2.0"
-  }
+    "knex": "^0.95.11",
+    "oracledb": "^5.2.0",
+    "winston": "^3.3.3"
+  },
+  "main": "app.js",
+  "directories": {
+    "test": "test"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oriyatirosh/messages_api.git"
+  },
+  "bugs": {
+    "url": "https://github.com/oriyatirosh/messages_api/issues"
+  },
+  "homepage": "https://github.com/oriyatirosh/messages_api#readme",
+  "description": ""
 }
