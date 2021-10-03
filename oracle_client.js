@@ -1,11 +1,15 @@
 const oracledb = require('oracledb');
+const logger = require('./logger');
+require('dotenv').config();
+
+var Dir = process.env.LIBDIR;
+
 module.exports = function(s){
   try {
-    oracledb.initOracleClient({libDir: 'C:\\oracle\\instantclient_19_11'});
+    oracledb.initOracleClient({libDir: Dir});
   } catch (err) {
     console.error('Whoops!');
-    console.error(err);
-    logger.error(err);
+    //logger.error(err);
     throw err;
   }
 }
