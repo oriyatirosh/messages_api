@@ -1,7 +1,8 @@
 const { createLogger, format, transports } = require('winston');
 
 module.exports = createLogger({
-transports:
+transports:[
+    new transports.Console({}),
     new transports.File({
     filename: 'logs/error_logs.js',
     format:format.combine(
@@ -9,4 +10,4 @@ transports:
         format.align(),
         format.printf(info => `${info.level}: ${[info.timestamp]}: ${info.message}`),
     )}),
-});
+]});

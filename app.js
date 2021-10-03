@@ -8,8 +8,7 @@ require('dotenv').config()
 
 const port = process.env.PORT;
 const host = process.env.HOST;
-console.log(port);
-console.log(host);
+
 // Use body parser
 app.use(bodyParser.json());
 //app.use(bodyParser.urlencoded({ extended: false }))
@@ -29,19 +28,15 @@ app.all('*', (req, res) => {
    logger.error("error 404! resource not found");
 
 }) 
-
-
-var server = app.listen(port, () => {   // Run the server
-    "use strict";
-
-    console.log("Server started...");
-    logger.info(`Server started and running on http://${host}:${port}`);
-    oracle_client();
-
-  })
-
-/* {
-    status: "ok", //ok, fail
-    payload: {}, //{},[]
-    errorMessage: "missing username"
-} */
+let start = async () => {
+    try {
+        oracle_client();
+        var server = app.listen(port, () => {   // Run the server
+            "use strict";
+            logger.info(`Server started and running on http://${host}:${port}`);
+        })
+    } catch (error) {
+        logger.error(error.message);
+    }
+};
+start();
