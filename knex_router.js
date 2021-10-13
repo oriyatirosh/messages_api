@@ -27,9 +27,16 @@ route.get('/messages/:MESSAGE_KEY', function (req, res) {
     selectByMessage_key(req, res);
 })
 
+// Http method: UPDATE
+// URI        : /messages/:MESSAGE_KEY
+// update the data of message given in :MESSAGE_KEY
+route.put('/messages', function (req, res) {
+    updateByMessage_key(req, res);
+})
+
 // Http method: DELETE
 // URI        : /messages/:MESSAGE_KEY
-// Delete the data of messge given in :MESSAGE_KEY
+// Delete the data of message given in :MESSAGE_KEY
 route.delete('/messages/:MESSAGE_KEY', function (req, res) {
     DeleteByMessage_key(req, res);
 })
@@ -48,8 +55,12 @@ async function selectAllMessages(req, res) {
       } else {
         order_by = "ID";
       }
-
-      result = await knex.select("*").from("MESSAGES").orderBy(order_by, 'desc').where(order_by, 'like', '%'+req.query.term+'%');
+      if(req.query.term){
+        result = await knex.select("*").from("MESSAGES").orderBy(order_by, 'desc').where(order_by, 'like', '%'+req.query.term+'%');
+      }else{
+        result = await knex.select("*").from("MESSAGES").orderBy(order_by, 'desc'); 
+      }
+      
       logger.info('GET /messages : Connection  success');
       res.status(200).json({
         status: 'ok', 
@@ -72,6 +83,7 @@ async function selectAllMessages(req, res) {
 //---------------------- post
 async function createNewMessage(req, res) {
     var result;
+
     if ("application/json" !== req.get('Content-Type')) {
         res.status(415).json({
             status: 'fail',
@@ -85,7 +97,6 @@ async function createNewMessage(req, res) {
         res.status(415).json({
             status: 'fail',
             message: "Error, Lack of message data",
-            detailed_message: err.message
         });
         logger.error("Error, Lack of message data");
         return;
@@ -94,7 +105,6 @@ async function createNewMessage(req, res) {
             res.status(415).json({
                 status: 'fail',
                 message: "Error in the integrity of field lengths",
-                detailed_message: err.message
             });
             logger.error("Error in the integrity of field lengths");
             return;
@@ -116,11 +126,15 @@ async function createNewMessage(req, res) {
         };
 
         result = await knex("MESSAGES").insert(insert_message);  
-        logger.info('message data insert create Successfully');
-        res.status(200).json({
-            status: 'ok',
-            message: 'message data insert create Successfully',
-        });
+        
+        if(result == 1){
+            res.status(200).json({status: 'ok',message:'The message was created successfully',key: m_key});
+            //res.status(200).json({status: 'ok',message:'update message success'});
+            logger.info('The message was created successfully');
+        }else{
+            res.status(400).json({status: 'fail',message:'Message creation failed'});
+            logger.info('Message creation failed');
+        }
 
     } catch (err) {
       //send error message
@@ -139,9 +153,9 @@ async function createNewMessage(req, res) {
 async function selectByMessage_key(req, res) {
     var result;
     try {
-
+        //console.log(req.params.MESSAGE_KEY);
         result = await knex("MESSAGES").where("KEY", req.params.MESSAGE_KEY).select("*");
-        logger.info("GET /messages/" + req.params.MESSAGE_KEY + " : Connection  success");
+        logger.info("GET /messages/" + req.params.MESSAGE_KEY + " : Connection  success!");
         //send message data
         res.status(200).json({
             status: 'ok', 
@@ -158,7 +172,38 @@ async function selectByMessage_key(req, res) {
         logger.error('Error getting the Message data');
     }
 }
+
+
+
+
+
+//---------------------- update by message_key
+async function updateByMessage_key(req, res) {
+    var result;
+
+    try {
+        var updated_d = new Date();
+        result = await knex("MESSAGES").update({'UPDATED_AT': updated_d,'MESSAGE': req.body.MESSAGE}).where("KEY",req.body.KEY);
+        logger.info("UPDATE /messages/" + req.body.KEY + " : Connection success");
+        if(result == 1){
+            res.status(200).json({status: 'ok',message:'update message success'});
+        }else{
+            res.status(400).json({status: 'fail',message:'Failed to update message'});
+        }
+
+    } catch (err) {
+      //send error message
+        res.status(500).json({
+            status: 'fail',
+            message: "Input Error",
+            detailed_message: err.message
+        });
+        logger.error("Input Error");
+
+    }
+} 
   
+
 
 
 //---------------------- delete by message_key
@@ -188,7 +233,7 @@ async function DeleteByMessage_key(req, res) {
             message: "Input Error",
             detailed_message: err.message
         });
-        //logger.error("Input Error");
+        logger.error("Input Error");
 
     }
 }
